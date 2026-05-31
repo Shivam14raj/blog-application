@@ -5,6 +5,7 @@ import morgan  from 'morgan';
 import colors from 'colors'
 import conncetDB from './db/db.js';
 import userRoute from './Routes/userRoutes.js'
+import blogRoute from './Routes/blogRoutes.js'
 
 
 
@@ -18,7 +19,12 @@ app.use(morgan('dev'));
 
 
 // routes 
-app.use('/api/v1/user', userRoute); 
+// user routes
+app.use('/api/v1/user', userRoute);
+
+// blog routes 
+app.use('/api/v1/blog', blogRoute)
+
 
 const PORT = process.env.PORT
 
