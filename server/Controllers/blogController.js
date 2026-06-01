@@ -1,12 +1,13 @@
 import blogModel from "../models/blogModel.js";
 import mongoose from "mongoose";
+import userModel from "../models/userModel.js";
 
 // get all blog 
 export const getAllBlogs = async(req, res) =>{
      try {
        const blogs = await blogModel.find({}); // {} mtlb find many 
 
-       if(!blogs){
+       if(blogs.length === 0){
           return res.status(200).json({
              success: false, 
              message: "No blogs are found"
@@ -18,7 +19,7 @@ export const getAllBlogs = async(req, res) =>{
          message: "blogs are found", 
          blogCount: blogs.length, 
          blogs
-       })
+       })    
 
      } catch (error) {
         console.log(error);
@@ -32,22 +33,38 @@ export const getAllBlogs = async(req, res) =>{
 // create a blog 
 export const createBlogs = async(req, res) =>{
    try {
-    const {title, description, image} = req.body; 
-
-    if(!title || !description || !image){
+    const {title, description, image, user} = req.body; 
+    // validation
+    if(!title || !description || !image || !user){
         return res.status(400).json({
             success: false, 
             message: "All fields are required",
         })
     } 
 
-    const newblog = new blogModel({title, description, image})
-    await newblog.save(); 
+    const existingUser = await userModel.findById(user); 
+    // user validaton
+    if(!existingUser){
+        return res.status(404).json({
+            success: false, 
+            message: "User id is required to create a blog"
+        })
+    }
+
+    const newblog = new blogModel({title, description, image, user})
+    // save everything or save nothing (all or nothing); if error then rollback 
+    const session = await mongoose.startSession() 
+    session.startTransaction()
+    await newblog.save({session})
+    existingUser.blogs.push(newblog)
+    await existingUser.save({session})
+    await session.commitTransaction() 
+
 
     return res.status(201).json({
         success: true,
         message: "new blog is created", 
-        newblog
+        newblog    
     })
      } catch (error) {
         console.log(error);
@@ -65,7 +82,23 @@ export const updateBlogs = async(req, res) =>{
 
     const {title, description, image} = req.body; 
 
+    // validatate id 
+    if(!mongoose.Types.ObjectId.isValid(id)){
+        return res.status(400).json({
+            success: false, 
+            message: "invalid blog id"
+        })
+    }
+
     const blog = await blogModel.findByIdAndUpdate(id, {...req.body}, {new:true})
+
+    // blog validation
+    if(!blog){
+        return res.status(400).json({
+            success: false, 
+            message: "No blog is found"
+        })
+    }
 
     return res.status(200).json({
         success: true, 
@@ -80,21 +113,34 @@ export const updateBlogs = async(req, res) =>{
             message: "server error in updating all blogs"
         })
      }
-} 
+}     
 
 // delete a blog 
 export const deleteBlogs = async(req, res) =>{
+   
+   // create a session 
+   const session = await mongoose.startSession(); 
+   session.startTransaction(); 
    try {
      const {id} = req.params; 
 
-     const deleteblog = await blogModel.findByIdAndDelete(id); 
+     const deleteblog = await blogModel.findByIdAndDelete(id, {session}).populate("user"); 
 
      if(!deleteblog){
+        await session.abortTransaction();
+        session.endSession(); 
         return res.status(404).json({
             success: true, 
             message: "blog not found to delete"
         })
      } 
+
+     // now delete 
+     deleteBlogs.user.blogs.pull(deleteBlogs._id); 
+     await deleteBlogs.user.save({session});
+
+     await session.commitTransaction(); 
+     session.endSession(); 
 
      return res.status(200).json({
         success: true, 
@@ -102,6 +148,8 @@ export const deleteBlogs = async(req, res) =>{
      }) 
 
      } catch (error) {
+        await session.abortTransaction(); 
+        session.endSession(); 
         console.log(error);
         return res.status(500).json({
             success: false, 
@@ -112,15 +160,30 @@ export const deleteBlogs = async(req, res) =>{
 
 // delete all blogs 
 export const deleteAllBlogs = async(req, res) =>{
+   const session = mongoose.startSession(); 
+   session.startTransaction(); 
    try {
-    const deletemanyblog = await blogModel.deleteMany({}); 
+    const deletemanyblog = await blogModel.deleteMany({}, {session}); 
 
-    if(!deletemanyblog){
-        return res.status(404).json({
-            success: false, 
-            message: "no blog has been found to delete"
-        })
-    } 
+   if(deletemanyblog.deletedCount === 0){
+      (await session).abortTransaction(); 
+      session.endSession(); 
+
+      return res.status(404).json({
+        success: false, 
+        message: "No blog is found to be deleted"
+      })
+   } 
+
+    // 🔥 IMPORTANT: clear blogs array of all users
+    await userModel.updateMany(
+      {},
+      { $set: { blogs: [] } },
+      { session }
+    ) 
+
+    (await session).commitTransaction(); 
+    session.endSession(); 
 
     return res.status(200).json({
         success: true, 
@@ -128,6 +191,8 @@ export const deleteAllBlogs = async(req, res) =>{
     })
 
    } catch (error) {
+     (await session).abortTransaction(); 
+     session.endSession(); 
      console.log(error); 
      return res.status(500).json({
         success: false, 
@@ -142,7 +207,7 @@ export const getSingleBlogs = async(req, res) =>{
     const {id} = req.params; 
 
     if(!mongoose.Types.ObjectId.isValid(id)){
-        return res.status(400).json({
+        return res.status(404).json({
             success: false, 
             message: "invalid id"
         })
