@@ -116,46 +116,49 @@ export const updateBlogs = async(req, res) =>{
 }     
 
 // delete a blog 
-export const deleteBlogs = async(req, res) =>{
-   
-   // create a session 
-   const session = await mongoose.startSession(); 
-   session.startTransaction(); 
-   try {
-     const {id} = req.params; 
+export const deleteBlogs = async (req, res) => {
+  const session = await mongoose.startSession()
+  session.startTransaction()
 
-     const deleteblog = await blogModel.findByIdAndDelete(id, {session}).populate("user"); 
+  try {
+    const { id } = req.params
 
-     if(!deleteblog){
-        await session.abortTransaction();
-        session.endSession(); 
-        return res.status(404).json({
-            success: true, 
-            message: "blog not found to delete"
-        })
-     } 
+    const deleteblog = await blogModel
+      .findByIdAndDelete(id, { session })
+      .populate("user")
 
-     // now delete 
-     deleteBlogs.user.blogs.pull(deleteBlogs._id); 
-     await deleteBlogs.user.save({session});
+    if (!deleteblog) {
+      await session.abortTransaction()
+      session.endSession()
+      return res.status(404).json({
+        success: false,
+        message: "blog not found to delete"
+      })
+    }
 
-     await session.commitTransaction(); 
-     session.endSession(); 
+    // 🔒 VERY IMPORTANT SAFETY CHECK
+    if (deleteblog.user && deleteblog.user.blogs) {
+      deleteblog.user.blogs.pull(deleteblog._id)
+      await deleteblog.user.save({ session })
+    }
 
-     return res.status(200).json({
-        success: true, 
-        message: "blog has been deleted successfully"
-     }) 
+    await session.commitTransaction()
+    session.endSession()
 
-     } catch (error) {
-        await session.abortTransaction(); 
-        session.endSession(); 
-        console.log(error);
-        return res.status(500).json({
-            success: false, 
-            message: "server error in deleting all blogs"
-        })
-     }
+    return res.status(200).json({
+      success: true,
+      message: "blog has been deleted successfully"
+    })
+
+  } catch (error) {
+    await session.abortTransaction()
+    session.endSession()
+    console.log(error)
+    return res.status(500).json({
+      success: false,
+      message: "server error in deleting blog"
+    })
+  }
 }  
 
 // delete all blogs 
