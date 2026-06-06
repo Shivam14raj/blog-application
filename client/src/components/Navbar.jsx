@@ -13,7 +13,7 @@ const Navbar = () => {
   const handleLogout = () => {
     // dispatch(logout());
     console.log("logout clicked");
-  };
+  };  
 
   return (
     <AppBar position="sticky">
@@ -45,7 +45,7 @@ const Navbar = () => {
               <Button sx={{ margin: 1 }} color="inherit" component={Link} to="/login">
                 Login
               </Button>   
-              
+
               <Button sx={{ margin: 1 }} color="inherit" component={Link} to="/register">
                 Register
               </Button>
