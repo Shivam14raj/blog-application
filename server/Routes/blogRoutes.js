@@ -1,5 +1,5 @@
 import express from 'express'
-import { createBlogs, deleteAllBlogs, deleteBlogs, getAllBlogs, getSingleBlogs, updateBlogs } from '../Controllers/blogController.js';
+import { createBlogs, deleteAllBlogs, deleteBlogs, getAllBlogs, getSingleBlogs, getUserBlogs, updateBlogs } from '../Controllers/blogController.js';
 
 const router = express.Router(); 
 
@@ -20,6 +20,9 @@ router.delete('/delete-blog/:id', deleteBlogs)
 router.delete('/delete-all-blogs', deleteAllBlogs) 
 
 // get single blog 
-router.get('/get-blog/:id', getSingleBlogs)
+router.get('/get-blog/:id', getSingleBlogs) 
+
+// get specifc user blog 
+router.get("/user/:id", getUserBlogs);
 
 export default router; 

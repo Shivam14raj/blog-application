@@ -240,3 +240,39 @@ export const getSingleBlogs = async(req, res) =>{
         })
      }
 } 
+
+// get all blogs of a specific user
+export const getUserBlogs = async (req, res) => {
+  try {
+    const { id } = req.params; // user id
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
+    const userBlogs = await blogModel.find({ user: id });
+
+    if (userBlogs.length === 0) {
+      return res.status(200).json({
+        success: false,
+        message: "No blogs found for this user",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      blogCount: userBlogs.length,
+      blogs: userBlogs,
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error in getting user blogs",
+    });
+  }
+};
