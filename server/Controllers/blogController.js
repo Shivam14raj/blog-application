@@ -31,49 +31,57 @@ export const getAllBlogs = async(req, res) =>{
 } 
 
 // create a blog 
-export const createBlogs = async(req, res) =>{
-   try {
-    const {title, description, image, user} = req.body; 
-    // validation
-    if(!title || !description || !image || !user){
-        return res.status(400).json({
-            success: false, 
-            message: "All fields are required",
-        })
-    } 
+// create a blog 
+export const createBlogs = async (req, res) => {
+  try {
+    const { title, description, image, user } = req.body;
 
-    const existingUser = await userModel.findById(user); 
-    // user validaton
-    if(!existingUser){
-        return res.status(404).json({
-            success: false, 
-            message: "User id is required to create a blog"
-        })
+    // validation
+    if (!title || !description || !user) {
+      return res.status(400).json({
+        success: false,
+        message: "Title, description and user are required",
+      });
     }
 
-    const newblog = new blogModel({title, description, image, user})
-    // save everything or save nothing (all or nothing); if error then rollback 
-    const session = await mongoose.startSession() 
-    session.startTransaction()
-    await newblog.save({session})
-    existingUser.blogs.push(newblog)
-    await existingUser.save({session})
-    await session.commitTransaction() 
+    // check user exists
+    const existingUser = await userModel.findById(user);
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
+    // create blog
+    const newBlog = new blogModel({
+      title,
+      description,
+      image: image || "https://source.unsplash.com/random",
+      user,
+    });
+
+    // save blog
+    await newBlog.save();
+
+    // add blog to user
+    existingUser.blogs.push(newBlog._id);
+    await existingUser.save();
 
     return res.status(201).json({
-        success: true,
-        message: "new blog is created", 
-        newblog    
-    })
-     } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            success: false, 
-            message: "server error in creating all blogs"
-        })
-     }
-}  
+      success: true,
+      message: "New blog created successfully",
+      blog: newBlog,
+    });
+
+  } catch (error) {
+    console.log("CREATE BLOG ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "server error in creating blog",
+    });
+  }
+};
 
 // update a blog 
 export const updateBlogs = async(req, res) =>{
@@ -242,9 +250,10 @@ export const getSingleBlogs = async(req, res) =>{
 } 
 
 // get all blogs of a specific user
+// get all blogs of a specific user
 export const getUserBlogs = async (req, res) => {
   try {
-    const { id } = req.params; // user id
+    const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -255,17 +264,10 @@ export const getUserBlogs = async (req, res) => {
 
     const userBlogs = await blogModel.find({ user: id });
 
-    if (userBlogs.length === 0) {
-      return res.status(200).json({
-        success: false,
-        message: "No blogs found for this user",
-      });
-    }
-
     return res.status(200).json({
       success: true,
       blogCount: userBlogs.length,
-      blogs: userBlogs,
+      blogs: userBlogs, // always array
     });
 
   } catch (error) {
