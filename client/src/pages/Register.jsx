@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Box, Typography, TextField, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios'
 
 const Register = () => {
   const navigate = useNavigate();
@@ -20,8 +21,20 @@ const Register = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();    
+  const handleSubmit = async(e) => {
+    e.preventDefault();
+    try { 
+      // now send network request to backend 
+     const {data} =  await axios.post('http://localhost:4000/api/v1/user/register', {username: input.username, email: input.email, password: input.password})
+     if(data.success){
+        alert('register successfull')
+        navigate('/login')
+     } 
+     
+     
+    } catch (error) {
+      console.log(error)
+    }    
   };
 
   return (
@@ -57,9 +70,8 @@ const Register = () => {
         type="password"
         value={input.password}
         onChange={handleChange}
-      />
-
-      {/* ✅ IMPORTANT FIX */}
+      />  
+      
       <Button type="submit" variant="contained">
         Submit
       </Button>

@@ -1,18 +1,28 @@
 import React, { useState } from 'react';
 import { AppBar, Toolbar, Button, Typography, Box, Tab, Tabs } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import {authActions} from '../redux/store.jsx'
 // import { logout } from your redux slice (example)
 
 const Navbar = () => {
   const isLogin = useSelector((state) => state.isLogin);
   const dispatch = useDispatch();
+  const navigate = useNavigate(); 
 
   const [value, setValue] = useState(false);
 
   const handleLogout = () => {
     // dispatch(logout());
     console.log("logout clicked");
+    try { 
+      dispatch(authActions.logout()); 
+      alert('logout successful')
+      navigate('/login') 
+
+    } catch (error) {
+      console.log(error)
+    }
   };  
 
   return (

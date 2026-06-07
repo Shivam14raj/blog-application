@@ -1,0 +1,5 @@
+model -> routes -> controller 
+
+destructuring req.body 
+
+...prev in taking inputs in form 
