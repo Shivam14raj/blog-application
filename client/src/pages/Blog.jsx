@@ -11,7 +11,7 @@ const Blog = () => {
         "http://localhost:4000/api/v1/blog/all-blogs"
       );
       if (data?.success) {
-        setBlogs(data.blogs);
+        setBlogs(data.blogs);  
       }
     } catch (error) {
       console.log(error);

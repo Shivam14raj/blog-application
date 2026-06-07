@@ -43,6 +43,7 @@ const Navbar = () => {
             >
               <Tab label="Blogs" component={Link} to="/blogs" />
               <Tab label="My Blogs" component={Link} to="/my-blogs" />
+              <Tab label="create blog" component={Link} to="/create-blog" />
             </Tabs>
           </Box>
         )}
