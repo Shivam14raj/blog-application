@@ -10,7 +10,6 @@ const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch(); 
 
-
   const [input, setInput] = useState({
     email: "",
     password: ""
@@ -39,6 +38,7 @@ const Login = () => {
 
       if (data.success) {
         dispatch(authActions.login()); 
+        localStorage.setItem('userID', data?.user._id);   
         alert("Login successful");
         navigate("/"); 
       } else {
